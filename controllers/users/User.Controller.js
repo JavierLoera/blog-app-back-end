@@ -188,7 +188,7 @@ export const generateVerficationToken = expressAsyncHandler(async (req, res) => 
         console.log("🚀 ~ file: User.Controller.js ~ line 185 ~ generateVerficationToken ~ verificationToken", verificationToken)
         await user.save()
         const msg = {
-            to: 'jesus_loera_15@outlook.com',
+            to: `${user.email}`,
             from: 'jesus_loera_15@hotmail.com',
             subject: 'Sending with SendGrid is Fun',
             text: 'and easy to do anywhere, even with Node.js',
