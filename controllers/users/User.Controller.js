@@ -2,7 +2,7 @@ import { User } from "../../models/user/User.js"
 import expressAsyncHandler from "express-async-handler";
 import { generateToken } from '../../token/generateToken.js'
 import { validateMongoDbID } from "../../utils/validateMongoDbId.js";
-import sgMail from '@sendgrid/mail'
+import nodemailer from "nodemailer"
 import crypto from 'crypto'
 import { cloudinaryUploadImage } from "../../utils/couldinary.js"
 import fs from "fs";
@@ -183,19 +183,32 @@ export const generateVerficationToken = expressAsyncHandler(async (req, res) => 
     const id = req?.user?.id;
     const user = await User.findById(id);
     try {
-        sgMail.setApiKey(process.env.SENDGRID_KEY)
         const verificationToken = await user.generateVerificationToken();
-        console.log("🚀 ~ file: User.Controller.js ~ line 185 ~ generateVerficationToken ~ verificationToken", verificationToken)
         await user.save()
-        const msg = {
+
+        const message = {
+            from: "app_blog@gmail.com",
             to: `${user.email}`,
-            from: 'jesus_loera_15@hotmail.com',
-            subject: 'Sending with SendGrid is Fun',
-            text: 'and easy to do anywhere, even with Node.js',
-            html: `<strong>If your were requested to verifiy your account,verify now within 10 minutes,otherwise ignore this message <a href="${process.env.FRONT_URL}verify-account/${verificationToken}">Click here</a> or paste this in a browser ${process.env.FRONT_URL}verify-account/${verificationToken}</strong>`,
-        }
-        await sgMail.send(msg)
-        res.json({ message: `Un mensaje de verificacion fue enviado al email ` })
+            subject: "Verificar cuenta",
+            text: "Esta mensaje fue enviado para verificar tu cuenta",
+            html: `<strong>Si solicitaste verificar tu cuenta,Verficala ahora dentro de 10 minutos, de otra manera ignora este mensaje <a href="${process.env.FRONT_URL}verify-account/${verificationToken}">Click Aqui</a> O pega esto en la barra de busqueda: ${process.env.FRONT_URL}verify-account/${verificationToken}</strong>`
+        };
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.USUARIO_EMAIL,
+                pass: process.env.ACCESO_EMAIL
+            }
+        })
+
+        transporter.sendMail(message, (error, info) => {
+            if (error) {
+                throw new Error(error.message);
+            } else {
+                res.json({ message: `Un mensaje de verificacion fue enviado al email ` })
+            }
+        })
     } catch (error) {
         res.json(error)
     }
@@ -230,17 +243,29 @@ export const forgetPassword = expressAsyncHandler(async (req, res) => {
         const token = await user.createPasswordResetToken();
         await user.save();
 
-        sgMail.setApiKey(process.env.SENDGRID_KEY)
-        const msg = {
+        const message = {
+            from: "app_blog@gmail.com",
             to: email,
-            from: 'jesus_loera_15@hotmail.com',
-            subject: 'Change your password',
-            text: 'Este email se envio para cambiar la contraseña',
-            html: `<strong>If your were requested to verifiy your account,verify now within 10 minutes,otherwise ignore this message <a href="${process.env.FRONT_URL}reset-password/${token}">Click here</a>, \bor paste this in a browser ${process.env.FRONT_URL}reset-password/${token}</strong>`,
-        }
-        await sgMail.send(msg)
-        res.json({ message: `Un email para restablecer tu contraseña fue enviado cone exito a: ${email} ` })
+            subject: "Cambio de contrasena",
+            text: "Este email se envio para cambiar la contrasena",
+            html: `<strong>Si solicitaste el cambio de contrasena, cambiala ahora dentro de 10 minutos. De otra forma ignora esta mensaje <a href="${process.env.FRONT_URL}reset-password/${token}">Click Aqui</a>, \bo pega esto en la barra de navegacion:  ${process.env.FRONT_URL}reset-password/${token}</strong>`
+        };
 
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.USUARIO_EMAIL,
+                pass: process.env.ACCESO_EMAIL
+            }
+        })
+
+        transporter.sendMail(message, (error, info) => {
+            if (error) {
+                throw new Error(error.message);
+            } else {
+                res.json({ message: `Un email para restablecer tu contraseña fue enviado con exito a: ${email}` })
+            }
+        })
     } catch (error) {
         res.json(error)
     }
